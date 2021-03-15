@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wordpress-rds-kustomize
+  labels:
+    app: wordpress-rds-kustomize
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: wordpress-rds-kustomize
+    tier: frontend-rds-kustomize
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wp-pv-claim-rds-kustomize
+  labels:
+    app: wordpress-rds-kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wordpress-rds-kustomize
+  labels:
+    app: wordpress-rds-kustomize
+spec:
+  selector:
+    matchLabels:
+      app: wordpress-rds-kustomize
+      tier: frontend-rds-kustomize
+  strategy:
+    type: Recreate
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: wordpress-rds-kustomize
+        tier: frontend-rds-kustomize
+    spec:
+      containers:
+        - image: wordpress:5.7.0-apache
+          name: wordpress-rds-kustomize
+          env:
+            - name: WORDPRESS_DB_HOST
+              value: devopsinterview.cw7qgk28g9tl.us-east-1.rds.amazonaws.com
+            - name: WORDPRESS_DB_NAME
+              value: devopsinterview
+            - name: WORDPRESS_DB_USER
+              value: devopsinterview
+            - name: WORDPRESS_DB_PASSWORD
+              value: d3v0ps-1nt3rv13w
+          ports:
+            - containerPort: 80
+              name: wordpress-rds-kustomize
+          volumeMounts:
+            - name: wordpress-rds-persistent-storage-kustomize
+              mountPath: /var/www/html
+      volumes:
+        - name: wordpress-rds-persistent-storage-kustomize
+          persistentVolumeClaim:
+            claimName: wp-pv-claim-rds-kustomize
